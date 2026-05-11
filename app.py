@@ -1,8 +1,9 @@
+
 import os
+import mysql.connector
 
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from flask_mysqldb import MySQL
 
 app = Flask(__name__)
 
@@ -19,18 +20,6 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 # =========================================
 
 CORS(app)
-
-# =========================================
-# MYSQL CONFIG
-# =========================================
-
-app.config['MYSQL_HOST'] = os.getenv("MYSQLHOST")
-app.config['MYSQL_USER'] = os.getenv("MYSQLUSER")
-app.config['MYSQL_PASSWORD'] = os.getenv("MYSQLPASSWORD")
-app.config['MYSQL_DB'] = os.getenv("MYSQLDATABASE")
-app.config['MYSQL_PORT'] = int(os.getenv("MYSQLPORT"))
-
-mysql = MySQL(app)
 
 # =========================================
 # HOME
@@ -54,7 +43,17 @@ def register():
     email = data['email']
     password = data['password']
 
-    cursor = mysql.connection.cursor()
+    connection = mysql.connector.connect(
+
+        host=os.getenv("MYSQLHOST"),
+        user=os.getenv("MYSQLUSER"),
+        password=os.getenv("MYSQLPASSWORD"),
+        database=os.getenv("MYSQLDATABASE"),
+        port=os.getenv("MYSQLPORT")
+
+    )
+
+    cursor = connection.cursor()
 
     cursor.execute(
 
@@ -64,9 +63,10 @@ def register():
 
     )
 
-    mysql.connection.commit()
+    connection.commit()
 
     cursor.close()
+    connection.close()
 
     return jsonify({
 
@@ -86,7 +86,17 @@ def login():
     email = data['email']
     password = data['password']
 
-    cursor = mysql.connection.cursor()
+    connection = mysql.connector.connect(
+
+        host=os.getenv("MYSQLHOST"),
+        user=os.getenv("MYSQLUSER"),
+        password=os.getenv("MYSQLPASSWORD"),
+        database=os.getenv("MYSQLDATABASE"),
+        port=os.getenv("MYSQLPORT")
+
+    )
+
+    cursor = connection.cursor()
 
     cursor.execute(
 
@@ -99,6 +109,7 @@ def login():
     user = cursor.fetchone()
 
     cursor.close()
+    connection.close()
 
     if user:
 
@@ -123,8 +134,6 @@ def login():
 @app.route('/upload', methods=['POST'])
 def upload_image():
 
-    # CHECK IMAGE
-
     if 'image' not in request.files:
 
         return jsonify({
@@ -135,8 +144,6 @@ def upload_image():
 
     image = request.files['image']
 
-    # CHECK EMPTY FILE
-
     if image.filename == '':
 
         return jsonify({
@@ -144,8 +151,6 @@ def upload_image():
             "message":"No Selected File"
 
         }),400
-
-    # SAVE IMAGE
 
     filepath = os.path.join(
 
@@ -169,4 +174,4 @@ def upload_image():
 
 if __name__ == '__main__':
 
-   app.run(host="0.0.0.0", port=10000)
+    app.run(host="0.0.0.0", port=10000)
